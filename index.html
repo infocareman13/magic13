@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic13 · Service Manager</title>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d27;
+            --bg-card: #1e2130;
+            --bg-hover: #252840;
+            --text-primary: #e8eaf0;
+            --text-secondary: #8b8fa8;
+            --text-muted: #5a5e78;
+            --accent-blue: #4f8ef7;
+            --accent-green: #2ecc71;
+            --accent-red: #e74c3c;
+            --accent-yellow: #f39c12;
+            --accent-purple: #9b59b6;
+            --border: #2a2d3e;
+            --border-light: #3a3d4e;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ── LOGIN ── */
+        #loginScreen {
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse at center, #1a1d27 0%, #0f1117 70%);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 48px 44px;
+            width: 420px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        .login-icon {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 34px; margin: 0 auto 18px;
+        }
+        .login-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .login-sub { color: var(--text-secondary); font-size: 12px; margin-bottom: 32px; }
+        .btn-guest {
+            width: 100%; padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            color: var(--text-secondary); font-size: 14px; cursor: pointer;
+            transition: all 0.2s; margin-bottom: 6px;
+        }
+        .btn-guest:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-muted); }
+        .login-or {
+            text-align: center; color: var(--text-muted); font-size: 11px;
+            margin: 18px 0; position: relative;
+        }
+        .login-or::before, .login-or::after {
+            content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: var(--border);
+        }
+        .login-or::before { left: 0; } .login-or::after { right: 0; }
+        .frm label {
+            display: block; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-secondary); margin-bottom: 5px; text-align: left;
+        }
+        .frm input {
+            width: 100%; padding: 10px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text-primary);
+            font-size: 14px; margin-bottom: 14px; transition: border-color 0.2s;
+        }
+        .frm input:focus { outline: none; border-color: var(--accent-blue); }
+        .btn-login {
+            width: 100%; padding: 12px;
+            background: var(--accent-blue); border: none;
+            border-radius: var(--radius); color: #fff;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-login:hover { background: #3a7de8; transform: translateY(-1px); }
+        .login-err {
+            background: rgba(231,76,60,.1); border: 1px solid var(--accent-red);
+            border-radius: var(--radius); padding: 9px 14px;
+            font-size: 12px; color: var(--accent-red); margin-top: 10px; display: none;
+        }
+
+        /* ── LAYOUT ── */
+        .hidden { display: none !important; }
+        #app { display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar {
+            background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+            height: 56px; padding: 0 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+        .brand-ico {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+        .nav-user { display: flex; align-items: center; gap: 10px; }
+        .badge {
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .badge.admin { background: rgba(79,142,247,.15); color: var(--accent-blue); border: 1px solid rgba(79,142,247,.3); }
+        .badge.guest { background: rgba(139,143,168,.1); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-logout {
+            padding: 5px 12px; background: transparent;
+            border: 1px solid var(--border); border-radius: var(--radius);
+            color: var(--text-secondary); font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-logout:hover { background: rgba(231,76,60,.1); border-color: var(--accent-red); color: var(--accent-red); }
+        .body-wrap { display: flex; flex: 1; }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 210px; background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto;
+        }
+        .sec-lbl {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; color: var(--text-muted); padding: 14px 18px 4px;
+        }
+        .sidebar ul { list-style: none; }
+        .sidebar ul li a {
+            display: flex; align-items: center; gap: 9px;
+            padding: 9px 18px; color: var(--text-secondary);
+            text-decoration: none; font-size: 13px;
+            transition: all 0.18s; border-left: 3px solid transparent;
+        }
+        .sidebar ul li a:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .sidebar ul li a.active { background: var(--bg-hover); color: var(--accent-blue); border-left-color: var(--accent-blue); }
+
+        /* ── MAIN ── */
+        .main { flex: 1; padding: 24px; overflow-y: auto; }
+        .pg-hdr { margin-bottom: 22px; }
+        .pg-title { font-size: 19px; font-weight: 700; margin-bottom: 3px; }
+        .pg-sub { color: var(--text-secondary); font-size: 12px; }
+        .pg-hdr-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* ── GUEST BANNER ── */
+        .guest-banner {
+            background: rgba(243,156,18,.08); border: 1px solid rgba(243,156,18,.3);
+            border-radius: var(--radius); padding: 9px 14px;
+            font-size: 12px; color: var(--accent-yellow); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 7px;
+        }
+
+        /* ── STATS GRID ── */
+        .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+        .stat-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 20px; text-align: center;
+        }
+        .stat-val { font-size: 30px; font-weight: 700; margin-bottom: 4px; }
+        .stat-lbl { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+        }
+        .card-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 14px; }
+
+        /* ── FILE VIEWER ── */
+        .fv { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .fv-bar {
+            background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+            padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+        }
+        .fv-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+        .fv-tab {
+            padding: 5px 13px; border-radius: 6px; font-size: 12px;
+            cursor: pointer; color: var(--text-secondary); transition: all 0.18s; border: 1px solid transparent;
+        }
+        .fv-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .fv-tab.active { background: var(--accent-blue); color: #fff; }
+        .fv-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-copy {
+            display: flex; align-items: center; gap: 5px; padding: 7px 14px;
+            background: rgba(46,204,113,.1); border: 1px solid rgba(46,204,113,.35);
+            border-radius: var(--radius); color: var(--accent-green);
+            font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-copy:hover { background: rgba(46,204,113,.2); }
+        .btn-copy.copied { background: rgba(46,204,113,.25); }
+        .btn-print {
+            display: flex; align-items: center; gap: 5px; padding: 7px 14px;
+            background: transparent; border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text-secondary);
+            font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-print:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .fv-body {
+            padding: 24px; min-height: 380px; max-height: 580px;
+            overflow-y: auto; font-family: 'Courier New', monospace;
+            font-size: 13px; line-height: 1.75; color: var(--text-primary); white-space: pre-wrap;
+        }
+
+        /* ── TABLES ── */
+        .tbl { width: 100%; border-collapse: collapse; }
+        .tbl th {
+            text-align: left; padding: 10px 13px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border);
+        }
+        .tbl td { padding: 11px 13px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .tbl tr:last-child td { border-bottom: none; }
+
+        /* ── BADGES ── */
+        .pb { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .pb.p1 { background: rgba(231,76,60,.15); color: var(--accent-red); }
+        .pb.p2 { background: rgba(243,156,18,.15); color: var(--accent-yellow); }
+        .pb.p3 { background: rgba(46,204,113,.15); color: var(--accent-green); }
+        .sb { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .sb.open { background: rgba(231,76,60,.15); color: var(--accent-red); }
+        .sb.inprogress { background: rgba(79,142,247,.15); color: var(--accent-blue); }
+        .sb.resolved { background: rgba(46,204,113,.15); color: var(--accent-green); }
+
+        /* ── STATUS DOT ── */
+        .dot {
+            display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        }
+        .dot.up    { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .dot.down  { background: var(--accent-red);   box-shadow: 0 0 6px var(--accent-red); }
+        .dot.checking { background: var(--accent-yellow); animation: blink 1s infinite; }
+        .dot.unknown  { background: var(--text-muted); }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+        /* ── MONITOR LOG ── */
+        .mon-log {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 14px 16px;
+            font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6;
+            color: #7eff9a; max-height: 280px; overflow-y: auto;
+            white-space: pre-wrap; margin-top: 14px;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 8px 16px; border-radius: var(--radius);
+            font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;
+        }
+        .btn-primary { background: var(--accent-blue); border: 1px solid var(--accent-blue); color: #fff; }
+        .btn-primary:hover { background: #3a7de8; }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-secondary:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .btn-green {
+            background: rgba(46,204,113,.1); border: 1px solid rgba(46,204,113,.35);
+            color: var(--accent-green);
+        }
+        .btn-green:hover { background: rgba(46,204,113,.2); }
+        .btn-icon { background: transparent; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.18s; }
+        .btn-icon:hover { color: var(--accent-red); }
+
+        /* ── TOGGLE ── */
+        .toggle-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+        .toggle {
+            position: relative; width: 36px; height: 20px;
+            background: var(--border); border-radius: 10px; cursor: pointer; transition: background 0.2s;
+        }
+        .toggle.on { background: var(--accent-green); }
+        .toggle::after {
+            content: ''; position: absolute; width: 14px; height: 14px;
+            background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s;
+        }
+        .toggle.on::after { left: 19px; }
+
+        /* ── FORMS ── */
+        .fgroup { margin-bottom: 14px; }
+        .fgroup label {
+            display: block; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-secondary); margin-bottom: 5px;
+        }
+        .finput {
+            width: 100%; padding: 9px 13px;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text-primary); font-size: 13px; transition: border-color 0.2s;
+        }
+        .finput:focus { outline: none; border-color: var(--accent-blue); }
+        textarea.finput { resize: vertical; min-height: 80px; font-family: inherit; }
+        select.finput { appearance: none; }
+
+        /* ── MODAL ── */
+        .modal-bg {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.72); z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg); padding: 28px 28px 22px;
+            width: 500px; max-width: 92vw; box-shadow: var(--shadow);
+        }
+        .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 18px; }
+        .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed; bottom: 20px; right: 20px;
+            padding: 11px 18px; border-radius: var(--radius);
+            font-size: 13px; font-weight: 500; z-index: 9999;
+            transform: translateY(50px); opacity: 0;
+            transition: all 0.28s; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.ok { background: rgba(46,204,113,.13); border: 1px solid var(--accent-green); color: var(--accent-green); }
+        .toast.err { background: rgba(231,76,60,.13); border: 1px solid var(--accent-red); color: var(--accent-red); }
+
+        /* ── MONITOR FORM ROW ── */
+        .mon-form { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+        .mon-form input { flex: 1; min-width: 140px; }
+        .mon-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2,1fr); }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════ LOGIN ══════════════════ -->
+<div id="loginScreen">
+    <div class="login-box">
+        <div class="login-icon">🛡️</div>
+        <div class="login-title">Magic13 · Service Manager</div>
+        <div class="login-sub">Sistema de Gestión de Incidentes</div>
+
+        <button class="btn-guest" onclick="loginGuest()">
+            👤 Continuar como Invitado &nbsp;<small style="opacity:.6">(solo lectura)</small>
+        </button>
+
+        <div class="login-or">o inicia sesión como administrador</div>
+
+        <div class="frm">
+            <label>Usuario</label>
+            <input type="text" id="lUser" placeholder="admin" autocomplete="username">
+            <label>Contraseña</label>
+            <input type="password" id="lPass" placeholder="••••••••"
+                autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="btn-login" onclick="doLogin()">Iniciar sesión como Administrador</button>
+            <div class="login-err" id="lErr">Usuario o contraseña incorrectos.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div id="app" class="hidden">
+
+    <!-- Topbar -->
+    <nav class="topbar">
+        <div class="brand">
+            <div class="brand-ico">🛡️</div>
+            Magic13 · Service Manager
+        </div>
+        <div class="nav-user">
+            <span class="badge" id="roleBadge">Invitado</span>
+            <button class="btn-logout" onclick="logout()">Salir</button>
+        </div>
+    </nav>
+
+    <div class="body-wrap">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sec-lbl">Principal</div>
+            <ul>
+                <li><a href="#" class="active" data-sec="dashboard">📊 Dashboard</a></li>
+                <li><a href="#" data-sec="incidents">🚨 Incidentes</a></li>
+                <li><a href="#" data-sec="files">📄 Archivos</a></li>
+            </ul>
+            <div class="sec-lbl">Operaciones</div>
+            <ul>
+                <li><a href="#" data-sec="monitor">📡 Monitoreo</a></li>
+                <li><a href="#" data-sec="logs">📋 Bitácoras</a></li>
+            </ul>
+            <div class="sec-lbl" id="adminNav" style="display:none">Admin</div>
+            <ul id="adminLinks" style="display:none">
+                <li><a href="#" data-sec="settings">⚙️ Configuración</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+
+            <!-- Guest banner -->
+            <div class="guest-banner hidden" id="guestBanner">
+                ⚠️ Modo Invitado — acceso de solo lectura. Inicia sesión como administrador para gestionar incidentes y configurar el monitoreo.
+            </div>
+
+            <!-- ── DASHBOARD ── -->
+            <div class="section active" id="sec-dashboard">
+                <div class="pg-hdr">
+                    <div class="pg-title">Dashboard</div>
+                    <div class="pg-sub">Estado general de servicios e incidentes</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--accent-red)" id="d-open">0</div>
+                        <div class="stat-lbl">Abiertos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--accent-blue)" id="d-inprog">0</div>
+                        <div class="stat-lbl">En Proceso</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--accent-green)" id="d-resolved">0</div>
+                        <div class="stat-lbl">Resueltos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--accent-green)" id="d-svcup">—</div>
+                        <div class="stat-lbl">Servicios Activos</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">⚡ Actividad Reciente</div>
+                    <div id="d-recent" style="font-size:13px;color:var(--text-secondary)">—</div>
+                </div>
+            </div>
+
+            <!-- ── INCIDENTS ── -->
+            <div class="section" id="sec-incidents">
+                <div class="pg-hdr-row">
+                    <div>
+                        <div class="pg-title">Incidentes</div>
+                        <div class="pg-sub">Gestión y seguimiento de incidentes de servicio</div>
+                    </div>
+                    <button class="btn btn-primary" id="btnNewInc" onclick="openIncModal()">+ Nuevo Incidente</button>
+                </div>
+                <div class="card" style="padding:0;overflow:hidden">
+                    <table class="tbl">
+                        <thead><tr>
+                            <th>ID</th><th>Descripción</th><th>Prioridad</th>
+                            <th>Estado</th><th>Asignado</th><th>Creado</th><th></th>
+                        </tr></thead>
+                        <tbody id="incBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ── FILES ── -->
+            <div class="section" id="sec-files">
+                <div class="pg-hdr">
+                    <div class="pg-title">Archivos y Procedimientos</div>
+                    <div class="pg-sub">Documentación técnica y procedimientos operativos embebidos</div>
+                </div>
+                <div class="fv">
+                    <div class="fv-bar">
+                        <div class="fv-tabs" id="fvTabs"></div>
+                        <div class="fv-actions">
+                            <button class="btn-copy" id="btnCopy" onclick="copyFile()">
+                                📋 Copiar Contenido
+                            </button>
+                            <button class="btn-print" onclick="printFile()">🖨️ Imprimir</button>
+                        </div>
+                    </div>
+                    <div class="fv-body" id="fvBody"></div>
+                </div>
+            </div>
+
+            <!-- ── MONITOR ── -->
+            <div class="section" id="sec-monitor">
+                <div class="pg-hdr">
+                    <div class="pg-title">Monitoreo de Servicios</div>
+                    <div class="pg-sub">Verificación de conectividad — salida formateada para bitácoras de SM</div>
+                </div>
+                <div class="card">
+                    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+                        <div class="mon-form" id="monForm">
+                            <input class="finput" id="mName" placeholder="Nombre del servicio (ej. WAN Gateway)">
+                            <input class="finput" id="mTarget" placeholder="URL (ej. https://miservicio.com)">
+                            <button class="btn btn-primary" onclick="addMonitor()">Agregar</button>
+                        </div>
+                        <div class="mon-controls">
+                            <div class="toggle-wrap">
+                                <div class="toggle" id="arToggle" onclick="toggleAR()"></div>
+                                <span>Auto (30 s)</span>
+                            </div>
+                            <button class="btn btn-secondary" onclick="checkAll()">🔄 Verificar todos</button>
+                        </div>
+                    </div>
+
+                    <table class="tbl">
+                        <thead><tr>
+                            <th>Servicio</th><th>Destino</th><th>Estado</th>
+                            <th>Última verificación</th><th>Respuesta</th><th></th>
+                        </tr></thead>
+                        <tbody id="monBody"></tbody>
+                    </table>
+
+                    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+                        <button class="btn btn-green" onclick="copyMonLog()">📋 Copiar registro para bitácora</button>
+                        <button class="btn btn-secondary" onclick="clearMonLog()">🗑️ Limpiar log</button>
+                    </div>
+                    <div class="mon-log" id="monLog">-- Log de monitoreo --
+</div>
+                </div>
+            </div>
+
+            <!-- ── LOGS ── -->
+            <div class="section" id="sec-logs">
+                <div class="pg-hdr-row">
+                    <div>
+                        <div class="pg-title">Bitácoras</div>
+                        <div class="pg-sub">Registro cronológico de acciones para seguimiento de SM</div>
+                    </div>
+                    <button class="btn btn-primary" id="btnNewLog" onclick="openLogModal()">+ Nueva Entrada</button>
+                </div>
+                <div class="card" style="padding:0;overflow:hidden">
+                    <table class="tbl">
+                        <thead><tr>
+                            <th>Fecha/Hora</th><th>Incidente</th><th>Acción</th><th>Responsable</th><th>Detalle</th>
+                        </tr></thead>
+                        <tbody id="logBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ── SETTINGS ── -->
+            <div class="section" id="sec-settings">
+                <div class="pg-hdr">
+                    <div class="pg-title">Configuración</div>
+                    <div class="pg-sub">Administración del sistema</div>
+                </div>
+                <div class="card" style="max-width:460px">
+                    <div class="card-title">🔑 Cambiar contraseña de administrador</div>
+                    <div class="fgroup"><label>Contraseña actual</label>
+                        <input type="password" class="finput" id="sCurPass"></div>
+                    <div class="fgroup"><label>Nueva contraseña</label>
+                        <input type="password" class="finput" id="sNewPass"></div>
+                    <div class="fgroup"><label>Confirmar nueva contraseña</label>
+                        <input type="password" class="finput" id="sConfPass"></div>
+                    <button class="btn btn-primary" onclick="changePass()">Actualizar contraseña</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- ══ MODAL: Nuevo Incidente ══ -->
+<div class="modal-bg hidden" id="mInc">
+    <div class="modal">
+        <div class="modal-title">🚨 Nuevo Incidente</div>
+        <div class="fgroup"><label>Descripción</label>
+            <input class="finput" id="mI-desc" placeholder="Describe el incidente"></div>
+        <div class="fgroup"><label>Prioridad</label>
+            <select class="finput" id="mI-prio">
+                <option value="p1">P1 — Crítico</option>
+                <option value="p2">P2 — Alto</option>
+                <option value="p3" selected>P3 — Normal</option>
+            </select></div>
+        <div class="fgroup"><label>Asignado a</label>
+            <input class="finput" id="mI-asig" placeholder="Nombre del responsable"></div>
+        <div class="fgroup"><label>Notas iniciales</label>
+            <textarea class="finput" id="mI-notes" placeholder="Descripción detallada..."></textarea></div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeM('mInc')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveInc()">Crear Incidente</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: Nueva Bitácora ══ -->
+<div class="modal-bg hidden" id="mLog">
+    <div class="modal">
+        <div class="modal-title">📋 Nueva Entrada en Bitácora</div>
+        <div class="fgroup"><label>ID de Incidente</label>
+            <input class="finput" id="mL-inc" placeholder="INC-001"></div>
+        <div class="fgroup"><label>Acción Realizada</label>
+            <input class="finput" id="mL-act" placeholder="Diagnóstico, restablecimiento, escalamiento..."></div>
+        <div class="fgroup"><label>Responsable</label>
+            <input class="finput" id="mL-resp" placeholder="Tu nombre"></div>
+        <div class="fgroup"><label>Detalle / Salida del sistema</label>
+            <textarea class="finput" id="mL-det" placeholder="Pega aquí la salida del monitoreo u otros detalles..." style="min-height:110px"></textarea></div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeM('mLog')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveLog()">Guardar Entrada</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+const S = {
+    role: null,
+    adminPass: 'Admin@SM2024',
+    activeFile: 0,
+    arInterval: null,
+    arOn: false,
+    monIdCtr: 10,
+    monLog: '-- Log de monitoreo --\n',
+    incCtr: 4,
+
+    files: [
+        {
+            name: '📘 Proc. WAN Failover',
+            content:
+`PROCEDIMIENTO: FAILOVER DE ENLACE WAN
+═══════════════════════════════════════════
+Versión: 2.1  |  Actualizado: 2026-10-01
+Clasificación: Uso Interno – Solo personal TI
+
+OBJETIVO
+─────────
+Restablecer la conectividad WAN en caso de caída del enlace primario
+activando el enlace de respaldo de forma controlada y documentada.
+
+ALCANCE
+────────
+Aplica a : Router perimetral (10.0.0.1)
+           ISP primario y secundario
+Responsable: Ingeniero de Red de turno
+
+PASO A PASO
+────────────
+1. DETECCIÓN
+   • Verificar alerta en consola de monitoreo (este sistema).
+   • Ejecutar prueba de ping hacia gateway ISP primario.
+   • Confirmar caída con al menos 5 intentos fallidos.
+
+2. NOTIFICACIÓN
+   • Abrir incidente en Service Manager (Magic13).
+   • Notificar al supervisor de turno.
+   • Registrar hora exacta de inicio de falla.
+
+3. ACTIVACIÓN DE RESPALDO
+   • Acceder al router: ssh admin@10.0.0.1
+   • Verificar estado de interfaces:
+         show interface summary
+   • Activar ruta de respaldo:
+         ip route 0.0.0.0 0.0.0.0 [GW-RESPALDO] 10
+   • Confirmar conectividad por enlace de respaldo.
+
+4. VERIFICACIÓN
+   • Ping a múltiples destinos externos (8.8.8.8 / 1.1.1.1).
+   • Verificar navegación y servicios críticos.
+   • Actualizar estado del incidente → Resuelto temporal.
+
+5. RESTABLECIMIENTO PRIMARIO
+   • Coordinar con ISP para restablecimiento.
+   • Una vez confirmado, revertir ruta de respaldo:
+         no ip route 0.0.0.0 0.0.0.0 [GW-RESPALDO] 10
+   • Cerrar incidente con descripción completa en bitácora.
+
+CONTACTOS DE ESCALAMIENTO
+──────────────────────────
+Nivel 1 – Soporte NOC ..................... Ext. 2100
+Nivel 2 – Ing. de Red senior .............. Cel. 555-0100
+Nivel 3 – Gerencia TI ..................... Cel. 555-0200
+ISP Primario (soporte 24/7) ............... 800-555-1234`
+        },
+        {
+            name: '📗 Plantilla Bitácora',
+            content:
+`PLANTILLA DE BITÁCORA DE INCIDENTE – SERVICE MANAGER
+══════════════════════════════════════════════════════
+
+DATOS DEL INCIDENTE
+────────────────────
+ID Incidente  :  ____________________
+Fecha Inicio  :  ____________________
+Fecha Cierre  :  ____________________
+Prioridad     :  [ ] P1-Crítico  [ ] P2-Alto  [ ] P3-Normal
+Estado final  :  [ ] Resuelto  [ ] Escalado  [ ] En seguimiento
+
+DESCRIPCIÓN DEL PROBLEMA
+──────────────────────────
+Servicio afectado     : ____________________
+Síntomas detectados   :
+  ·
+  ·
+  ·
+Impacto en usuarios   : ____________________
+Área afectada         : ____________________
+
+REGISTRO DE ACCIONES (cronológico)
+────────────────────────────────────
+Hora       │ Responsable         │ Acción realizada
+───────────┼─────────────────────┼──────────────────────────────────
+           │                     │
+           │                     │
+           │                     │
+           │                     │
+
+DIAGNÓSTICO / CAUSA RAÍZ
+──────────────────────────
+Causa identificada:
+  _________________________________________________________
+
+SOLUCIÓN APLICADA
+──────────────────
+Acción correctiva:
+  _________________________________________________________
+Comandos / procedimientos ejecutados:
+  _________________________________________________________
+
+VERIFICACIÓN DE RESTABLECIMIENTO
+──────────────────────────────────
+[ ] Servicio responde normalmente
+[ ] Usuarios confirmaron restablecimiento
+[ ] Monitoreo sin alertas por 15 min tras cierre
+
+NOTAS ADICIONALES
+──────────────────
+_____________________________________________________________
+_____________________________________________________________
+
+Responsable del cierre: __________________  Firma: __________`
+        },
+        {
+            name: '📙 Ref. Router',
+            content:
+`CONFIGURACIÓN DE REFERENCIA – ROUTER PERIMETRAL
+════════════════════════════════════════════════
+Dispositivo      : Cisco ASR 1001-X
+IP de Gestión    : 10.0.0.1
+Última revisión  : 2026-09-15
+
+INTERFACES
+──────────
+GigabitEthernet0/0/0
+  Descripción : WAN Primaria – ISP Telco
+  IP          : 200.1.1.2 / 255.255.255.252
+  Estado      : up / up
+
+GigabitEthernet0/0/1
+  Descripción : WAN Respaldo – ISP Cable
+  IP          : 190.2.2.2 / 255.255.255.252
+  Estado      : standby (activa en failover)
+
+GigabitEthernet0/1/0
+  Descripción : LAN Core – VLAN Trunk
+  IP          : 10.0.0.1 / 255.255.255.0
+  Estado      : up / up
+
+RUTAS ESTÁTICAS
+───────────────
+0.0.0.0/0  →  200.1.1.1  (ISP Primario)  metric 1
+0.0.0.0/0  →  190.2.2.1  (ISP Respaldo)  metric 10
+
+COMANDOS DE DIAGNÓSTICO RÁPIDO
+────────────────────────────────
+show ip interface brief
+show ip route
+ping 8.8.8.8 source 10.0.0.1
+traceroute 1.1.1.1
+show log | last 50
+
+ACCESO
+──────
+SSH    : ssh admin@10.0.0.1  (Puerto 22)
+Consola: Sala de equipos – Rack A3 / Puerto serial`
+        }
+    ],
+
+    incidents: [
+        { id:'INC-001', desc:'Caída de enlace WAN principal', prio:'p1', status:'open',      assigned:'Carlos Méndez', created:'2026-10-26 08:15', notes:'IP WAN 200.1.1.1 sin respuesta desde 08:10 hrs.' },
+        { id:'INC-002', desc:'Latencia elevada en servidor web', prio:'p2', status:'inprogress', assigned:'Ana Torres', created:'2026-10-26 09:30', notes:'Ping >800ms desde varios puntos de red.' },
+        { id:'INC-003', desc:'Falla en respaldo nocturno', prio:'p3', status:'resolved',    assigned:'Luis Ramos',   created:'2026-10-25 22:00', notes:'Disco lleno. Se liberó espacio, respaldo completado.' },
+    ],
+
+    logs: [
+        { ts:'2026-10-26 08:20', inc:'INC-001', action:'Diagnóstico inicial', resp:'Carlos Méndez', det:'Verificación WAN: sin respuesta ICMP. Iniciando troubleshooting.' },
+        { ts:'2026-10-26 09:45', inc:'INC-002', action:'Análisis de tráfico', resp:'Ana Torres',    det:'Saturación detectada en enlace 10.0.0.1. Captura de paquetes en curso.' },
+    ],
+
+    monitors: [
+        { id:1, name:'Google DNS',      target:'https://dns.google',      status:'unknown', last:null, ms:null },
+        { id:2, name:'Cloudflare DNS',  target:'https://one.one.one.one', status:'unknown', last:null, ms:null },
+    ]
+};
+
+// ════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════
+function loginGuest(){ S.role='guest'; launchApp(); }
+
+function doLogin(){
+    const u = document.getElementById('lUser').value.trim();
+    const p = document.getElementById('lPass').value;
+    const e = document.getElementById('lErr');
+    if(u==='admin' && p===S.adminPass){
+        S.role='admin'; e.style.display='none'; launchApp();
+    } else {
+        e.style.display='block';
+        document.getElementById('lPass').value='';
+        document.getElementById('lPass').focus();
+    }
+}
+
+function launchApp(){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').classList.remove('hidden');
+
+    const isAdmin = S.role==='admin';
+    const rb = document.getElementById('roleBadge');
+    rb.textContent = isAdmin ? 'Administrador' : 'Invitado';
+    rb.className = 'badge ' + (isAdmin ? 'admin' : 'guest');
+
+    document.getElementById('guestBanner').classList.toggle('hidden', isAdmin);
+    document.getElementById('adminNav').style.display   = isAdmin ? 'block' : 'none';
+    document.getElementById('adminLinks').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('btnNewInc').style.display  = isAdmin ? 'inline-flex' : 'none';
+    document.getElementById('btnNewLog').style.display  = isAdmin ? 'inline-flex' : 'none';
+    document.getElementById('monForm').style.visibility = isAdmin ? 'visible' : 'hidden';
+
+    initFiles(); renderInc(); renderLogs(); renderMon(); refreshDash();
+}
+
+function logout(){
+    S.role=null; stopAR();
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('lUser').value='';
+    document.getElementById('lPass').value='';
+    document.getElementById('lErr').style.display='none';
+    navTo('dashboard');
+}
+
+// ════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════
+document.querySelectorAll('.sidebar a[data-sec]').forEach(a=>{
+    a.addEventListener('click', e=>{ e.preventDefault(); navTo(a.dataset.sec); });
+});
+
+function navTo(name){
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+    document.getElementById('sec-'+name)?.classList.add('active');
+    document.querySelector(`.sidebar a[data-sec="${name}"]`)?.classList.add('active');
+}
+
+// ════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════
+function refreshDash(){
+    const open = S.incidents.filter(i=>i.status==='open').length;
+    const inp  = S.incidents.filter(i=>i.status==='inprogress').length;
+    const res  = S.incidents.filter(i=>i.status==='resolved').length;
+    const up   = S.monitors.filter(m=>m.status==='up').length;
+    document.getElementById('d-open').textContent    = open;
+    document.getElementById('d-inprog').textContent  = inp;
+    document.getElementById('d-resolved').textContent= res;
+    document.getElementById('d-svcup').textContent   = up+'/'+S.monitors.length;
+
+    const recent = [...S.incidents].slice(-3).reverse();
+    document.getElementById('d-recent').innerHTML = recent.map(i=>
+        `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+            <span>${i.id} — ${i.desc}</span>
+            <span class="sb ${i.status}">${sLabel(i.status)}</span>
+         </div>`
+    ).join('') || '<span>No hay actividad reciente.</span>';
+}
+
+// ════════════════════════════════════════════
+//  FILES
+// ════════════════════════════════════════════
+function initFiles(){
+    const tabs = document.getElementById('fvTabs');
+    tabs.innerHTML = S.files.map((f,i)=>
+        `<div class="fv-tab ${i===0?'active':''}" onclick="selFile(${i},this)">${f.name}</div>`
+    ).join('');
+    renderFileCont(0);
+}
+
+function selFile(i,el){
+    S.activeFile=i;
+    document.querySelectorAll('.fv-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    renderFileCont(i);
+}
+
+function renderFileCont(i){ document.getElementById('fvBody').textContent = S.files[i].content; }
+
+function copyFile(){
+    const f = S.files[S.activeFile];
+    const ts = tsNow();
+    const txt = `=== COPIA DE DOCUMENTO – Service Manager Magic13 ===\nArchivo : ${f.name}\nFecha   : ${ts}\n${'═'.repeat(52)}\n\n${f.content}`;
+    toClip(txt, ()=>{
+        const btn = document.getElementById('btnCopy');
+        btn.innerHTML='✅ Copiado!'; btn.classList.add('copied');
+        setTimeout(()=>{ btn.innerHTML='📋 Copiar Contenido'; btn.classList.remove('copied'); }, 2200);
+    });
+}
+
+function printFile(){
+    const w=window.open('','_blank');
+    w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>Imprimir</title><style>body{font-family:monospace;font-size:13px;padding:20px;white-space:pre-wrap}</style></head><body>${S.files[S.activeFile].content}</body></html>`);
+    w.print(); w.close();
+}
+
+// ════════════════════════════════════════════
+//  INCIDENTS
+// ════════════════════════════════════════════
+function renderInc(){
+    const b = document.getElementById('incBody');
+    if(!S.incidents.length){ b.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted)">Sin incidentes registrados.</td></tr>'; return; }
+    b.innerHTML = S.incidents.map(i=>`
+        <tr>
+            <td><code style="color:var(--accent-blue)">${i.id}</code></td>
+            <td>${i.desc}</td>
+            <td><span class="pb ${i.prio}">${i.prio.toUpperCase()}</span></td>
+            <td><span class="sb ${i.status}">${sLabel(i.status)}</span></td>
+            <td>${i.assigned}</td>
+            <td style="color:var(--text-muted);font-size:11px">${i.created}</td>
+            <td>${S.role==='admin'?`<button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" onclick="cycleInc('${i.id}')">Cambiar estado</button>`:''}
+            </td>
+        </tr>`).join('');
+    refreshDash();
+}
+
+function cycleInc(id){
+    const m={open:'inprogress',inprogress:'resolved',resolved:'open'};
+    const i=S.incidents.find(x=>x.id===id);
+    if(i){ i.status=m[i.status]; renderInc(); }
+}
+
+function openIncModal(){
+    if(S.role!=='admin') return;
+    ['mI-desc','mI-asig','mI-notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mI-prio').value='p3';
+    document.getElementById('mInc').classList.remove('hidden');
+}
+
+function saveInc(){
+    const desc=document.getElementById('mI-desc').value.trim();
+    if(!desc){ toast('Ingresa una descripción.','err'); return; }
+    const id='INC-'+String(S.incCtr++).padStart(3,'0');
+    S.incidents.unshift({ id, desc, prio:document.getElementById('mI-prio').value,
+        status:'open', assigned:document.getElementById('mI-asig').value.trim()||'Sin asignar',
+        created:tsNow(), notes:document.getElementById('mI-notes').value.trim() });
+    closeM('mInc'); renderInc(); toast('Incidente '+id+' creado.','ok');
+}
+
+// ════════════════════════════════════════════
+//  MONITOR
+// ════════════════════════════════════════════
+function renderMon(){
+    const b=document.getElementById('monBody');
+    if(!S.monitors.length){
+        b.innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-muted)">Sin servicios configurados.</td></tr>';
+        refreshDash(); return;
+    }
+    b.innerHTML=S.monitors.map(m=>`
+        <tr>
+            <td><strong>${m.name}</strong></td>
+            <td style="font-size:12px;color:var(--text-secondary)">${m.target}</td>
+            <td><span class="dot ${m.status}"></span>${monLabel(m.status)}</td>
+            <td style="font-size:11px;color:var(--text-muted)">${m.last||'—'}</td>
+            <td style="font-size:12px">${m.ms!==null?m.ms+' ms':'—'}</td>
+            <td style="display:flex;gap:4px;align-items:center">
+                <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" onclick="checkSvc(${m.id})">Verificar</button>
+                ${S.role==='admin'?`<button class="btn-icon" onclick="delMon(${m.id})" title="Eliminar">✕</button>`:''}
+            </td>
+        </tr>`).join('');
+    refreshDash();
+}
+
+function addMonitor(){
+    if(S.role!=='admin') return;
+    const name=document.getElementById('mName').value.trim();
+    const tgt =document.getElementById('mTarget').value.trim();
+    if(!name||!tgt){ toast('Completa nombre y destino.','err'); return; }
+    S.monitors.push({id:S.monIdCtr++,name,target:tgt,status:'unknown',last:null,ms:null});
+    document.getElementById('mName').value='';
+    document.getElementById('mTarget').value='';
+    renderMon(); toast('Servicio agregado.','ok');
+}
+
+function delMon(id){ S.monitors=S.monitors.filter(m=>m.id!==id); renderMon(); }
+
+async function checkSvc(id){
+    const m=S.monitors.find(x=>x.id===id);
+    if(!m) return;
+    m.status='checking'; renderMon();
+    appendLog(`[${tsNow()}] Verificando ${m.name} → ${m.target}...`);
+    const t0=Date.now();
+    try{
+        const ac=new AbortController();
+        const timer=setTimeout(()=>ac.abort(),8000);
+        await fetch(m.target,{method:'HEAD',mode:'no-cors',signal:ac.signal});
+        clearTimeout(timer);
+        m.ms=Date.now()-t0; m.status='up'; m.last=tsNow();
+        appendLog(`[${m.last}] ✓ ${m.name} ACTIVO — ${m.ms} ms`);
+        toast(m.name+' está ACTIVO ✓','ok');
+    } catch(e){
+        if(e.name==='AbortError'){
+            m.status='down'; m.ms=null; m.last=tsNow();
+            appendLog(`[${m.last}] ✗ ${m.name} SIN RESPUESTA (timeout >8 s)`);
+            toast(m.name+' SIN RESPUESTA ✗','err');
+        } else {
+            // no-cors opaque response — host is reachable
+            m.ms=Date.now()-t0; m.status='up'; m.last=tsNow();
+            appendLog(`[${m.last}] ✓ ${m.name} ACTIVO (respuesta opaca) — ${m.ms} ms`);
+            toast(m.name+' está ACTIVO ✓','ok');
+        }
+    }
+    renderMon();
+}
+
+async function checkAll(){ for(const m of S.monitors) await checkSvc(m.id); toast('Verificación completada.','ok'); }
+
+function toggleAR(){
+    S.arOn=!S.arOn;
+    document.getElementById('arToggle').classList.toggle('on',S.arOn);
+    if(S.arOn){ checkAll(); S.arInterval=setInterval(checkAll,30000); }
+    else stopAR();
+}
+
+function stopAR(){
+    clearInterval(S.arInterval); S.arInterval=null; S.arOn=false;
+    document.getElementById('arToggle')?.classList.remove('on');
+}
+
+function appendLog(txt){
+    S.monLog+=txt+'\n';
+    const el=document.getElementById('monLog');
+    el.textContent=S.monLog; el.scrollTop=el.scrollHeight;
+}
+
+function clearMonLog(){
+    S.monLog='-- Log de monitoreo --\n';
+    document.getElementById('monLog').textContent=S.monLog;
+}
+
+function copyMonLog(){
+    const svcs=S.monitors.map(m=>
+        `  • ${m.name} (${m.target})\n    Estado    : ${monLabel(m.status)}\n    Respuesta : ${m.ms!==null?m.ms+' ms':'—'}\n    Última    : ${m.last||'—'}`
+    ).join('\n\n');
+    const txt =
+`╔══════════════════════════════════════════════════════╗
+║  REGISTRO DE MONITOREO – Service Manager Magic13     ║
+╚══════════════════════════════════════════════════════╝
+Generado  : ${tsNow()}
+Usuario   : ${S.role==='admin'?'admin':'Invitado'}
+
+ESTADO DE SERVICIOS MONITOREADOS
+──────────────────────────────────
+${svcs||'  (sin servicios configurados)'}
+
+LOG DE EVENTOS
+──────────────
+${S.monLog}
+══════════════════════════════════════════════════════`;
+    toClip(txt, ()=>toast('Registro copiado al portapapeles ✓','ok'));
+}
+
+// ════════════════════════════════════════════
+//  LOGS
+// ════════════════════════════════════════════
+function renderLogs(){
+    const b=document.getElementById('logBody');
+    if(!S.logs.length){ b.innerHTML='<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted)">Sin entradas en bitácora.</td></tr>'; return; }
+    b.innerHTML=[...S.logs].reverse().map(l=>`
+        <tr>
+            <td style="white-space:nowrap;font-size:11px;color:var(--text-muted)">${l.ts}</td>
+            <td><code style="color:var(--accent-blue)">${l.inc}</code></td>
+            <td>${l.action}</td>
+            <td>${l.resp}</td>
+            <td style="font-size:12px;color:var(--text-secondary);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${l.det}">${l.det}</td>
+        </tr>`).join('');
+}
+
+function openLogModal(){
+    if(S.role!=='admin') return;
+    ['mL-inc','mL-act','mL-det'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mL-resp').value='admin';
+    document.getElementById('mLog').classList.remove('hidden');
+}
+
+function saveLog(){
+    const inc=document.getElementById('mL-inc').value.trim();
+    const act=document.getElementById('mL-act').value.trim();
+    if(!inc||!act){ toast('Completa los campos requeridos.','err'); return; }
+    S.logs.push({ ts:tsNow(), inc, action:act,
+        resp:document.getElementById('mL-resp').value.trim()||'admin',
+        det:document.getElementById('mL-det').value.trim() });
+    closeM('mLog'); renderLogs(); toast('Entrada guardada en bitácora.','ok');
+}
+
+// ════════════════════════════════════════════
+//  SETTINGS
+// ════════════════════════════════════════════
+function changePass(){
+    const cur=document.getElementById('sCurPass').value;
+    const nw =document.getElementById('sNewPass').value;
+    const cf =document.getElementById('sConfPass').value;
+    if(cur!==S.adminPass){ toast('Contraseña actual incorrecta.','err'); return; }
+    if(nw.length<8){ toast('Mínimo 8 caracteres.','err'); return; }
+    if(nw!==cf){ toast('Las contraseñas no coinciden.','err'); return; }
+    S.adminPass=nw;
+    ['sCurPass','sNewPass','sConfPass'].forEach(id=>document.getElementById(id).value='');
+    toast('Contraseña actualizada.','ok');
+}
+
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
+function sLabel(s){ return {open:'Abierto',inprogress:'En Proceso',resolved:'Resuelto'}[s]||s; }
+function monLabel(s){ return {up:'Activo',down:'Sin respuesta',checking:'Verificando…',unknown:'Sin verificar'}[s]||s; }
+
+function tsNow(){
+    const d=new Date();
+    const p=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function toClip(txt, cb){
+    navigator.clipboard.writeText(txt).then(cb).catch(()=>toast('No se pudo copiar. Intenta de nuevo.','err'));
+}
+
+function closeM(id){ document.getElementById(id).classList.add('hidden'); }
+
+function toast(msg,type='ok'){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.className='toast '+type+' show';
+    setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
