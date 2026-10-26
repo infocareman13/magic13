@@ -340,6 +340,70 @@
             .stats-grid { grid-template-columns: repeat(2,1fr); }
             .sidebar { display: none; }
         }
+
+        /* ── ORYGIN-STYLE FLOATING PANEL ── */
+        #consulta-btn {
+            position: fixed; bottom: 20px; right: 16px; z-index: 2000;
+            background: linear-gradient(135deg, #7c3aed, #4f8ef7);
+            color: #fff; border: none; border-radius: 10px;
+            padding: 11px 18px; font: 700 13px system-ui,sans-serif;
+            cursor: pointer; box-shadow: 0 6px 20px rgba(79,142,247,.45);
+            transition: all 0.2s; display: none;
+        }
+        #consulta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(79,142,247,.6); }
+        #consulta-btn:disabled { opacity: .65; transform: none; }
+
+        #consulta-panel {
+            position: fixed; bottom: 70px; right: 16px; z-index: 1999;
+            width: 420px; max-height: 74vh; overflow-y: auto;
+            background: var(--bg-card); color: var(--text-primary);
+            border: 1px solid var(--border-light); border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.55);
+            font-size: 13px; display: none;
+        }
+        .cp-head {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px 10px; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: var(--bg-card); z-index: 1;
+        }
+        .cp-head strong { font-size: 13px; }
+        .cp-close {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 17px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px;
+        }
+        .cp-close:hover { color: var(--accent-red); background: rgba(231,76,60,.1); }
+        .cp-body { padding: 12px 14px; }
+        .cp-status {
+            border-radius: 8px; padding: 10px 13px; margin-bottom: 13px;
+            border: 2px solid;
+        }
+        .cp-status.up   { border-color: var(--accent-green); background: rgba(46,204,113,.08); }
+        .cp-status.down { border-color: var(--accent-red);   background: rgba(231,76,60,.08); }
+        .cp-status.warn { border-color: var(--accent-yellow);background: rgba(243,156,18,.08); }
+        .cp-status .lbl { font-size: 11px; margin-bottom: 3px; color: var(--text-secondary); }
+        .cp-status .val { font-size: 16px; font-weight: 800; }
+        .cp-status.up   .val { color: var(--accent-green); }
+        .cp-status.down .val { color: var(--accent-red); }
+        .cp-status.warn .val { color: var(--accent-yellow); }
+        .cp-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+        .cp-table tr { border-bottom: 1px solid var(--border); }
+        .cp-table tr:last-child { border-bottom: none; }
+        .cp-table td:first-child { padding: 5px 10px 5px 0; color: var(--text-secondary); white-space: nowrap; width: 45%; }
+        .cp-table td:last-child  { padding: 5px 0; font-weight: 600; color: var(--text-primary); word-break: break-word; }
+        .cp-table tr.hl td { color: var(--accent-blue) !important; background: rgba(79,142,247,.06); }
+        .cp-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .cp-bar button { border: none; border-radius: 7px; padding: 7px 13px; font: 700 12px system-ui; cursor: pointer; transition: all .18s; }
+        .cp-btn-copy { background: #0ea5e9; color: #fff; }
+        .cp-btn-copy:hover { background: #0284c7; }
+        .cp-btn-raw  { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border) !important; }
+        .cp-btn-raw:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .cp-raw {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 6px; padding: 10px 12px; font: 11px 'Courier New',monospace;
+            white-space: pre-wrap; color: #7eff9a; max-height: 200px; overflow-y: auto;
+            margin-top: 8px;
+        }
+        .cp-spinner { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 13px; }
     </style>
 </head>
 <body>
@@ -449,13 +513,16 @@
                         <div class="pg-title">Incidentes</div>
                         <div class="pg-sub">Gestión y seguimiento de incidentes de servicio</div>
                     </div>
-                    <button class="btn btn-primary" id="btnNewInc" onclick="openIncModal()">+ Nuevo Incidente</button>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn btn-secondary" onclick="exportAll()">📄 Exportar Todo</button>
+                        <button class="btn btn-primary" id="btnNewInc" onclick="openIncModal()">+ Nuevo Incidente</button>
+                    </div>
                 </div>
                 <div class="card" style="padding:0;overflow:hidden">
                     <table class="tbl">
                         <thead><tr>
                             <th>ID</th><th>Descripción</th><th>Prioridad</th>
-                            <th>Estado</th><th>Asignado</th><th>Creado</th><th></th>
+                            <th>Estado</th><th>Asignado</th><th>Creado</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="incBody"></tbody>
                     </table>
@@ -559,6 +626,19 @@
             </div>
 
         </main>
+    </div>
+</div>
+
+<!-- ══ FLOATING CONSULTA PANEL (Orygin-style) ══ -->
+<button id="consulta-btn" onclick="consultaToggle()">📡 Consultar</button>
+
+<div id="consulta-panel">
+    <div class="cp-head">
+        <strong id="cp-title">Consulta de Servicios</strong>
+        <button class="cp-close" onclick="cerrarPanel()">✕</button>
+    </div>
+    <div class="cp-body" id="cp-body">
+        <div class="cp-spinner">Iniciando consulta…</div>
     </div>
 </div>
 
@@ -835,6 +915,7 @@ function launchApp(){
     document.getElementById('btnNewLog').style.display  = isAdmin ? 'inline-flex' : 'none';
     document.getElementById('monForm').style.visibility = isAdmin ? 'visible' : 'hidden';
 
+    document.getElementById('consulta-btn').style.display = 'inline-block';
     initFiles(); renderInc(); renderLogs(); renderMon(); refreshDash();
 }
 
@@ -842,6 +923,8 @@ function logout(){
     S.role=null; stopAR();
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('app').classList.add('hidden');
+    document.getElementById('consulta-btn').style.display='none';
+    cerrarPanel();
     document.getElementById('lUser').value='';
     document.getElementById('lPass').value='';
     document.getElementById('lErr').style.display='none';
@@ -935,7 +1018,11 @@ function renderInc(){
             <td><span class="sb ${i.status}">${sLabel(i.status)}</span></td>
             <td>${i.assigned}</td>
             <td style="color:var(--text-muted);font-size:11px">${i.created}</td>
-            <td>${S.role==='admin'?`<button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" onclick="cycleInc('${i.id}')">Cambiar estado</button>`:''}
+            <td>
+                <div style="display:flex;gap:4px;align-items:center">
+                    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;background:rgba(155,89,182,.12);border-color:rgba(155,89,182,.35);color:#b47be0" onclick="exportReport('${i.id}')">📄 Reporte</button>
+                    ${S.role==='admin'?`<button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" onclick="cycleInc('${i.id}')">Cambiar estado</button>`:''}
+                </div>
             </td>
         </tr>`).join('');
     refreshDash();
@@ -1147,6 +1234,335 @@ function toast(msg,type='ok'){
     const t=document.getElementById('toast');
     t.textContent=msg; t.className='toast '+type+' show';
     setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ════════════════════════════════════════════
+//  CONSULTA PANEL — estilo Orygin
+// ════════════════════════════════════════════
+let panelOpen = false;
+let selectedIncId = null;   // incidente activo al abrir el panel
+
+function consultaToggle(){
+    panelOpen ? cerrarPanel() : abrirPanel();
+}
+
+function cerrarPanel(){
+    panelOpen = false;
+    document.getElementById('consulta-panel').style.display='none';
+    document.getElementById('consulta-btn').textContent='📡 Consultar';
+}
+
+async function abrirPanel(){
+    panelOpen = true;
+    const panel = document.getElementById('consulta-panel');
+    const body  = document.getElementById('cp-body');
+    const title = document.getElementById('cp-title');
+    const btn   = document.getElementById('consulta-btn');
+
+    // Detecta incidente activo (último INC-xxx visible o el primero de la lista)
+    const inc = S.incidents[0] || null;
+    selectedIncId = inc ? inc.id : null;
+    title.textContent = inc ? inc.id+' · Consulta en tiempo real' : 'Consulta de Servicios';
+
+    btn.textContent = '⏳ Consultando…';
+    btn.disabled = true;
+    panel.style.display = 'block';
+    body.innerHTML = '<div class="cp-spinner">⏳ Verificando servicios en tiempo real…</div>';
+
+    // Ejecuta todas las verificaciones de monitoreo
+    const t0 = Date.now();
+    for(const m of S.monitors) await checkSvc(m.id);
+    const elapsed = Date.now()-t0;
+
+    btn.textContent = '📡 Consultar';
+    btn.disabled = false;
+
+    renderPanelResultado(inc, elapsed);
+}
+
+function renderPanelResultado(inc, elapsed){
+    const body  = document.getElementById('cp-body');
+
+    // ── Estado general de servicios
+    const up    = S.monitors.filter(m=>m.status==='up').length;
+    const total = S.monitors.length;
+    const allUp = total>0 && up===total;
+    const allDn = total>0 && up===0;
+    const stClass= allUp?'up': allDn?'down':'warn';
+    const stTxt  = allUp?'TODOS LOS SERVICIOS ACTIVOS': allDn?'SIN RESPUESTA — SERVICIOS CAÍDOS':'ESTADO PARCIAL — ALGUNOS SERVICIOS CON FALLA';
+
+    // ── Filas de la tabla de servicios
+    const filas = S.monitors.map(m=>{
+        const hl = m.status==='down'||m.status==='unknown';
+        return `<tr class="${hl?'hl':''}">
+            <td>${m.name}</td>
+            <td><span class="dot ${m.status}" style="vertical-align:middle"></span>${monLabel(m.status)}${m.ms!==null?' — '+m.ms+' ms':''}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="2" style="color:var(--text-muted);padding:8px 0">Sin servicios configurados.</td></tr>';
+
+    // ── Incidente relacionado
+    const incBloque = inc ? `
+        <table class="cp-table" style="margin-bottom:14px">
+            <tr><td>ID Incidente</td><td>${inc.id}</td></tr>
+            <tr><td>Descripción</td><td>${inc.desc}</td></tr>
+            <tr><td>Prioridad</td><td>${prioTxt(inc.prio)}</td></tr>
+            <tr><td>Estado</td><td>${sLabel(inc.status)}</td></tr>
+            <tr><td>Asignado a</td><td>${inc.assigned}</td></tr>
+            <tr><td>Apertura</td><td>${inc.created}</td></tr>
+        </table>` : '';
+
+    // ── Texto plano para copiar (para pegar en bitácora de SM)
+    const txtCopia = generarTxtCopia(inc, stTxt);
+
+    body.innerHTML = `
+        <div class="cp-bar">
+            <button class="cp-btn-copy" id="cp-copy-btn" onclick="copiarPanelTxt(${JSON.stringify(txtCopia).replace(/"/g,'&quot;')})">📋 Copiar</button>
+            <button class="cp-btn-raw" onclick="toggleRaw()">🧾 Ver texto plano</button>
+        </div>
+
+        <div class="cp-status ${stClass}">
+            <div class="lbl">Estado de servicios monitoreados</div>
+            <div class="val">${stTxt}</div>
+        </div>
+
+        ${inc?`<div class="card-title" style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Incidente relacionado</div>`:''}
+        ${incBloque}
+
+        <div class="card-title" style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Servicios (${up}/${total} activos · ${elapsed} ms total)</div>
+        <table class="cp-table">${filas}</table>
+
+        <div id="cp-raw-area"></div>`;
+}
+
+function generarTxtCopia(inc, stTxt){
+    const ts = tsNow();
+    const svcLines = S.monitors.map(m=>
+        `  • ${m.name} (${m.target})\n    Estado    : ${monLabel(m.status)}\n    Respuesta : ${m.ms!==null?m.ms+' ms':'—'}\n    Verificado: ${m.last||'—'}`
+    ).join('\n\n');
+
+    const incLines = inc
+        ? `ID INCIDENTE   : ${inc.id}\nDESCRIPCIÓN    : ${inc.desc}\nPRIORIDAD      : ${prioTxt(inc.prio)}\nESTADO         : ${sLabel(inc.status)}\nASIGNADO A     : ${inc.assigned}\nFECHA APERTURA : ${inc.created}\n\n`
+        : '';
+
+    return (
+`╔══════════════════════════════════════════════════════╗
+║   CONSULTA DE SERVICIOS — Service Manager Magic13    ║
+╚══════════════════════════════════════════════════════╝
+Fecha/Hora : ${ts}
+Operador   : ${S.role==='admin'?'admin':'Invitado'}
+
+${incLines}ESTADO GENERAL
+──────────────
+${stTxt}
+
+SERVICIOS MONITOREADOS
+──────────────────────
+${svcLines||'  (sin servicios configurados)'}
+
+LOG DE EVENTOS
+──────────────
+${S.monLog}
+══════════════════════════════════════════════════════`);
+}
+
+function copiarPanelTxt(txt){
+    const btn = document.getElementById('cp-copy-btn');
+    navigator.clipboard.writeText(txt).then(()=>{
+        btn.textContent='✅ Copiado';
+        setTimeout(()=>{ btn.textContent='📋 Copiar'; },1800);
+    }).catch(()=>{ btn.textContent='⚠️ Error'; });
+}
+
+function toggleRaw(){
+    const area = document.getElementById('cp-raw-area');
+    if(area.querySelector('.cp-raw')){ area.innerHTML=''; return; }
+    const inc = S.incidents.find(i=>i.id===selectedIncId)||S.incidents[0]||null;
+    const txt = generarTxtCopia(inc,'— texto plano —');
+    area.innerHTML=`<div class="cp-raw">${txt}</div>`;
+}
+
+// ════════════════════════════════════════════
+//  EXPORT / REPORTE (ventana nueva)
+// ════════════════════════════════════════════
+function prioTxt(p){ return {p1:'P1 — Crítico',p2:'P2 — Alto',p3:'P3 — Normal'}[p]||p; }
+
+function buildReportHTML(title, sections){
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;padding:0}
+  .cover{background:linear-gradient(135deg,#1a1d27,#2d3561);color:#fff;padding:40px 48px 32px;page-break-after:avoid}
+  .cover h1{font-size:22px;font-weight:700;margin-bottom:6px}
+  .cover .meta{font-size:12px;opacity:.7;margin-top:6px}
+  .cover .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;margin-top:12px}
+  .content{padding:32px 48px}
+  .sec{margin-bottom:28px;page-break-inside:avoid}
+  .sec-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4f8ef7;border-bottom:2px solid #4f8ef7;padding-bottom:5px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+  th{background:#f0f4ff;text-align:left;padding:7px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#5a6080;border-bottom:2px solid #c8d4ff}
+  td{padding:8px 10px;border-bottom:1px solid #e8ecf8;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .pre{background:#f7f9fc;border:1px solid #dde4f0;border-radius:6px;padding:12px 14px;font-family:'Courier New',monospace;font-size:11px;line-height:1.7;white-space:pre-wrap;color:#2a3050}
+  .kv{display:grid;grid-template-columns:160px 1fr;gap:6px 12px;font-size:12px}
+  .kv .k{color:#5a6080;font-weight:600}
+  .kv .v{color:#1a1a2e}
+  .pill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+  .pill.p1{background:#fde8e8;color:#c0392b}
+  .pill.p2{background:#fef3e2;color:#d68910}
+  .pill.p3{background:#eafaf1;color:#1e8449}
+  .pill.open{background:#fde8e8;color:#c0392b}
+  .pill.inprogress{background:#e8f0fe;color:#1a5276}
+  .pill.resolved{background:#eafaf1;color:#1e8449}
+  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #e0e6f0;font-size:11px;color:#999;text-align:center}
+  .no-print{position:fixed;top:16px;right:16px;display:flex;gap:8px;z-index:99}
+  .no-print button{padding:8px 18px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn-pdf{background:#4f8ef7;color:#fff}
+  .btn-txt{background:#2ecc71;color:#fff}
+  @media print{.no-print{display:none}body{font-size:12px}.cover{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button class="btn-pdf" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  <button class="btn-txt" onclick="downloadTxt()">⬇️ Descargar .txt</button>
+</div>
+${sections}
+<div class="content">
+  <div class="footer">Generado por Magic13 · Service Manager — ${tsNow()}</div>
+</div>
+<script>
+function downloadTxt(){
+  const txt = document.body.innerText.replace(/^.*Imprimir.*\\n.*Descargar.*\\n/,'');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download = '${title.replace(/[^a-zA-Z0-9_-]/g,'_')}.txt';
+  a.click();
+}
+<\/script>
+</body></html>`;
+}
+
+function exportReport(id){
+    const inc = S.incidents.find(x=>x.id===id);
+    if(!inc){ toast('Incidente no encontrado.','err'); return; }
+    const related = S.logs.filter(l=>l.inc===id);
+    const monRows = S.monitors.map(m=>
+        `<tr><td>${m.name}</td><td style="font-family:monospace">${m.target}</td>
+         <td><span class="pill ${m.status}">${monLabel(m.status)}</span></td>
+         <td>${m.ms!==null?m.ms+' ms':'—'}</td><td>${m.last||'—'}</td></tr>`
+    ).join('');
+
+    const logRows = related.length
+        ? related.map(l=>`<tr><td style="white-space:nowrap">${l.ts}</td><td>${l.action}</td><td>${l.resp}</td><td>${l.det}</td></tr>`).join('')
+        : '<tr><td colspan="4" style="color:#999;text-align:center;padding:12px">Sin entradas de bitácora para este incidente.</td></tr>';
+
+    const sections = `
+<div class="cover">
+  <div style="font-size:11px;opacity:.6;margin-bottom:8px">REPORTE DE INCIDENTE</div>
+  <h1>${inc.id} — ${inc.desc}</h1>
+  <div class="meta">Generado: ${tsNow()} &nbsp;|&nbsp; Sistema: Magic13 Service Manager</div>
+  <span class="pill ${inc.prio}" style="margin-top:12px;display:inline-block">${prioTxt(inc.prio)}</span>
+  &nbsp;<span class="pill ${inc.status}">${sLabel(inc.status)}</span>
+</div>
+<div class="content">
+  <div class="sec">
+    <div class="sec-title">Datos del Incidente</div>
+    <div class="kv">
+      <span class="k">ID</span><span class="v">${inc.id}</span>
+      <span class="k">Descripción</span><span class="v">${inc.desc}</span>
+      <span class="k">Prioridad</span><span class="v">${prioTxt(inc.prio)}</span>
+      <span class="k">Estado</span><span class="v">${sLabel(inc.status)}</span>
+      <span class="k">Asignado a</span><span class="v">${inc.assigned}</span>
+      <span class="k">Fecha apertura</span><span class="v">${inc.created}</span>
+    </div>
+    ${inc.notes?`<div class="pre" style="margin-top:12px">${inc.notes}</div>`:''}
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Bitácora de Acciones</div>
+    <table>
+      <thead><tr><th>Fecha/Hora</th><th>Acción</th><th>Responsable</th><th>Detalle</th></tr></thead>
+      <tbody>${logRows}</tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Estado de Servicios Monitoreados</div>
+    ${S.monitors.length
+        ? `<table><thead><tr><th>Servicio</th><th>Destino</th><th>Estado</th><th>Respuesta</th><th>Última verificación</th></tr></thead><tbody>${monRows}</tbody></table>`
+        : '<p style="color:#999;font-size:12px">Sin servicios configurados en el monitor.</p>'}
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Log de Monitoreo</div>
+    <div class="pre">${S.monLog}</div>
+  </div>
+</div>`;
+
+    const w = window.open('','_blank');
+    w.document.write(buildReportHTML('Reporte_'+id, sections));
+    w.document.close();
+}
+
+function exportAll(){
+    const incRows = S.incidents.map(i=>
+        `<tr><td><strong>${i.id}</strong></td><td>${i.desc}</td>
+         <td><span class="pill ${i.prio}">${prioTxt(i.prio)}</span></td>
+         <td><span class="pill ${i.status}">${sLabel(i.status)}</span></td>
+         <td>${i.assigned}</td><td>${i.created}</td></tr>`
+    ).join('') || '<tr><td colspan="6" style="color:#999;text-align:center;padding:12px">Sin incidentes.</td></tr>';
+
+    const logRows = [...S.logs].reverse().map(l=>
+        `<tr><td style="white-space:nowrap">${l.ts}</td><td>${l.inc}</td><td>${l.action}</td><td>${l.resp}</td><td>${l.det}</td></tr>`
+    ).join('') || '<tr><td colspan="5" style="color:#999;text-align:center;padding:12px">Sin entradas.</td></tr>';
+
+    const monRows = S.monitors.map(m=>
+        `<tr><td>${m.name}</td><td style="font-family:monospace">${m.target}</td>
+         <td><span class="pill ${m.status}">${monLabel(m.status)}</span></td>
+         <td>${m.ms!==null?m.ms+' ms':'—'}</td><td>${m.last||'—'}</td></tr>`
+    ).join('') || '<tr><td colspan="5" style="color:#999;text-align:center;padding:12px">Sin servicios.</td></tr>';
+
+    const sections = `
+<div class="cover">
+  <div style="font-size:11px;opacity:.6;margin-bottom:8px">REPORTE GLOBAL</div>
+  <h1>Magic13 · Service Manager</h1>
+  <div class="meta">Exportación completa — ${tsNow()}</div>
+</div>
+<div class="content">
+  <div class="sec">
+    <div class="sec-title">Todos los Incidentes</div>
+    <table>
+      <thead><tr><th>ID</th><th>Descripción</th><th>Prioridad</th><th>Estado</th><th>Asignado</th><th>Creado</th></tr></thead>
+      <tbody>${incRows}</tbody>
+    </table>
+  </div>
+  <div class="sec">
+    <div class="sec-title">Bitácora Completa</div>
+    <table>
+      <thead><tr><th>Fecha/Hora</th><th>Incidente</th><th>Acción</th><th>Responsable</th><th>Detalle</th></tr></thead>
+      <tbody>${logRows}</tbody>
+    </table>
+  </div>
+  <div class="sec">
+    <div class="sec-title">Estado de Servicios Monitoreados</div>
+    <table>
+      <thead><tr><th>Servicio</th><th>Destino</th><th>Estado</th><th>Respuesta</th><th>Última verificación</th></tr></thead>
+      <tbody>${monRows}</tbody>
+    </table>
+  </div>
+  <div class="sec">
+    <div class="sec-title">Log de Monitoreo</div>
+    <div class="pre">${S.monLog}</div>
+  </div>
+</div>`;
+
+    const w = window.open('','_blank');
+    w.document.write(buildReportHTML('Reporte_Global_Magic13', sections));
+    w.document.close();
 }
 </script>
 </body>
