@@ -251,7 +251,10 @@
       'box-shadow:0 8px 28px rgba(2,6,23,.25); font:13px system-ui,Segoe UI,Arial,sans-serif;';
 
     const cab = document.createElement('div');
-    cab.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;';
+    cab.style.cssText =
+      'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;' +
+      'position:sticky; top:0; background:#fff; z-index:10; padding-bottom:8px;' +
+      'border-bottom:1px solid #e2e8f0;';
     const tit = document.createElement('strong');
     tit.textContent = 'Orygin · ' + referencia;
     const x = document.createElement('button');
@@ -300,7 +303,10 @@
       datos.pares.map((p) => p.etiqueta + ': ' + p.valor).join('\n');
 
     const barra = document.createElement('div');
-    barra.style.cssText = 'display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;';
+    barra.style.cssText =
+      'display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;' +
+      'position:sticky; top:43px; background:#fff; z-index:9;' +
+      'padding:8px 0 8px; border-bottom:1px solid #f1f5f9;';
 
     const copiar = document.createElement('button');
     copiar.textContent = '📋 Copiar';
