@@ -50,7 +50,7 @@
   ];
 
   const TIMEOUT_MS   = 8000;   // ms antes de declarar "sin respuesta"
-  const POSICION_BTN = 'bottom:60px; right:12px;';
+  const POSICION_BTN = 'bottom:108px; right:12px;';
   // ────────────────────────────────────────────────────────────────────
 
   if (window.top !== window.self) return; // un solo botón en el frame principal
