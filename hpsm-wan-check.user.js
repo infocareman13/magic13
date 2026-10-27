@@ -32,15 +32,8 @@
   'use strict';
 
   // ── CONFIGURA AQUÍ ──────────────────────────────────────────────────
-  // Nombres del campo HP SM que puede contener la IP WAN.
-  // Agrega los que uses; el script prueba todos y toma el primero con valor.
-  const CAMPOS_IP_WAN = [
-    'instance/ip.wan',
-    'instance/device.network.address',
-    'instance/device.ip',
-    'instance/affected.item',      // a veces el CI trae la IP
-    'instance/description',        // fallback: el técnico la escribe ahí
-  ];
+  // Campo exacto de HP SM donde está la IP WAN (confirmado por inspección).
+  const CAMPO_IP_WAN = 'instance/ip.wan';
 
   // Puertos a verificar, en orden.
   const PUERTOS = [
@@ -57,40 +50,43 @@
 
   const norm = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 
-  // ── lectura de campos (recorre todos los iframes de HP SM) ──────────
-  function buscarEnFrames(selector, raiz) {
-    raiz = raiz || document;
+  // ── lectura multi-frame con profundidad (mismo fix que Orygin v0.3.3) ─
+  // HP SM usa múltiples iframes con el mismo name en distintos contextos.
+  // Recolecta TODOS los valores y devuelve el del iframe más profundo
+  // (= formulario del incidente activo, no un frame de navegación).
+  function recolectarValores(selector, raiz, profundidad, resultados) {
+    raiz        = raiz        || document;
+    profundidad = profundidad || 0;
+    resultados  = resultados  || [];
     try {
       const el = raiz.querySelector(selector);
-      if (el && norm(el.value)) return norm(el.value);
+      if (el && norm(el.value)) resultados.push({ valor: norm(el.value), profundidad });
     } catch (e) {}
     for (const frame of raiz.querySelectorAll('iframe')) {
       try {
         const doc = frame.contentDocument;
         if (!doc) continue;
-        const v = buscarEnFrames(selector, doc);
-        if (v) return v;
-      } catch (e) { /* iframe de otro origen */ }
+        recolectarValores(selector, doc, profundidad + 1, resultados);
+      } catch (e) {}
     }
-    return '';
+    return resultados;
   }
 
   function leerCampo(nombreCampo) {
-    return buscarEnFrames(`[name="${nombreCampo}"]`);
+    const todos = recolectarValores(`[name="${nombreCampo}"]`);
+    if (!todos.length) return '';
+    // Devuelve el valor del frame más profundo; empate → más dígitos
+    todos.sort((a, b) => b.profundidad - a.profundidad || b.valor.length - a.valor.length);
+    return todos[0].valor;
   }
 
   function leerNumeroIncidente() {
-    return buscarEnFrames('[name="instance/number"]')
-        || buscarEnFrames('[name="number"]')
-        || '—';
+    return leerCampo('instance/number') || leerCampo('number') || '—';
   }
 
-  // Devuelve la primera IP WAN encontrada en los campos configurados.
   function leerIpWan() {
-    for (const campo of CAMPOS_IP_WAN) {
-      const valor = leerCampo(campo);
-      if (ipValida(valor)) return { ip: limpiarIp(valor), campo };
-    }
+    const valor = leerCampo(CAMPO_IP_WAN);
+    if (ipValida(valor)) return { ip: limpiarIp(valor), campo: CAMPO_IP_WAN };
     return null;
   }
 
